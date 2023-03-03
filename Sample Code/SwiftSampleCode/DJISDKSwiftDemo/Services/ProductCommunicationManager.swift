@@ -41,6 +41,7 @@ extension ProductCommunicationManager : DJISDKManagerDelegate {
         
         if enableBridgeMode {
             DJISDKManager.enableBridgeMode(withBridgeAppIP: bridgeAppIP)
+            DJISDKManager.startConnectionToProduct()
         } else {
             DJISDKManager.startConnectionToProduct()
         }
