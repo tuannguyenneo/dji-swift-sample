@@ -50,6 +50,15 @@ extension DJICameraHybridZoomSpec {
     }
 }
 
+class TIWaypointV2Action: DJIWaypointV2Action {
+    let type: WaypointV2Action
+    
+    init(type: WaypointV2Action) {
+        self.type = type
+        super.init()
+    }
+}
+
 final class WaypointMissionV2ViewController: UIViewController {
     var missionV2Operator: DJIWaypointV2MissionOperator! {
         DJISDKManager.missionControl()!.waypointV2MissionOperator()
@@ -343,8 +352,8 @@ final class WaypointMissionV2ViewController: UIViewController {
                 }
                 if let progress = event.progress {
                     let actionID = progress.actionId
-                    if let wpAction = self.backupListActionsV2.first(where: { $0.actionId == actionID }) {
-                        print("===>> toActionExecutionEvent progress \(wpAction.)")
+                    if let wpAction = self.backupListActionsV2.first(where: { $0.actionId == actionID }) as? TIWaypointV2Action {
+                        print("===>> toActionExecutionEvent action type = \(wpAction.type) - actionID = \(actionID)")
                     }
                 }
             }
@@ -409,7 +418,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             if newActionIndex != 0 {
                 newActionIndex += 1
             }
-            let reachPointAction = DJIWaypointV2Action()
+            let reachPointAction = TIWaypointV2Action(type: .REACH_POINT)
             reachPointAction.actionId = UInt(newActionIndex)
             reachPointAction.trigger = reachPointTrigger
             reachPointAction.actuator = reachPointActuator
@@ -452,7 +461,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // GIMBAL_TILT - combine
             newActionIndex += 1
             
-            let rotateGimbalAction = DJIWaypointV2Action()
+            let rotateGimbalAction = TIWaypointV2Action(type: .ROTATE_GIMBAL)
             rotateGimbalAction.actionId = UInt(newActionIndex)
             rotateGimbalAction.trigger = trigger
             rotateGimbalAction.actuator = actuator
@@ -486,7 +495,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // GIMBAL_TILT - combine
             newActionIndex += 1
             
-            let rotateGimbalAction = DJIWaypointV2Action()
+            let rotateGimbalAction = TIWaypointV2Action(type: .ROTATE_GIMBAL_PAN)
             rotateGimbalAction.actionId = UInt(newActionIndex)
             rotateGimbalAction.trigger = trigger
             rotateGimbalAction.actuator = actuator
@@ -528,7 +537,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // HEADING - Combine:
             newActionIndex += 1
             
-            let rotateHeadingAction = DJIWaypointV2Action()
+            let rotateHeadingAction = TIWaypointV2Action(type: .ROTATE_HEADING)
             rotateHeadingAction.actionId = UInt(newActionIndex)
             rotateHeadingAction.trigger = trigger
             rotateHeadingAction.actuator = actuator
@@ -556,7 +565,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // START_RECORD - combine:
             newActionIndex += 1
             
-            let startRecordAction = DJIWaypointV2Action()
+            let startRecordAction = TIWaypointV2Action(type: .START_RECORD)
             startRecordAction.actionId = UInt(newActionIndex)
             startRecordAction.trigger = trigger
             startRecordAction.actuator = actuator
@@ -584,7 +593,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // STOP_RECORD - combine:
             newActionIndex += 1
             
-            let stopRecordAction = DJIWaypointV2Action()
+            let stopRecordAction = TIWaypointV2Action(type: .STOP_RECORD)
             stopRecordAction.actionId = UInt(newActionIndex)
             stopRecordAction.trigger = trigger
             stopRecordAction.actuator = actuator
@@ -616,7 +625,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // HOVERING - Combine Trigger & Actuator: Make drone stop moving
             newActionIndex += 1
             
-            let stayAction = DJIWaypointV2Action()
+            let stayAction = TIWaypointV2Action(type: .STAY)
             stayAction.actionId = UInt(newActionIndex)
             stayAction.trigger = trigger
             stayAction.actuator = actuator
@@ -648,7 +657,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // START_MOVING - Combine Trigger & Actuator: Make drone start moving
             newActionIndex += 1
             
-            let startMovingAction = DJIWaypointV2Action()
+            let startMovingAction = TIWaypointV2Action(type: .START_MOVING)
             startMovingAction.actionId = UInt(newActionIndex)
             startMovingAction.trigger = trigger
             startMovingAction.actuator = actuator
@@ -676,7 +685,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // IMAGE_SHOOTING - combine:
             newActionIndex += 1
             
-            let takePhotoAction = DJIWaypointV2Action()
+            let takePhotoAction = TIWaypointV2Action(type: .TAKE_PHOTO)
             takePhotoAction.actionId = UInt(newActionIndex)
             takePhotoAction.trigger = trigger
             takePhotoAction.actuator = actuator
@@ -704,7 +713,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // START_INTERVAL - combine:
             newActionIndex += 1
             
-            let intervalShootingAction = DJIWaypointV2Action()
+            let intervalShootingAction = TIWaypointV2Action(type: .START_INTERVAL_SHOOTING)
             intervalShootingAction.actionId = UInt(newActionIndex)
             intervalShootingAction.trigger = trigger
             intervalShootingAction.actuator = actuator
@@ -736,7 +745,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             // START_INTERVAL - combine:
             newActionIndex += 1
             
-            let intervalShootingAction = DJIWaypointV2Action()
+            let intervalShootingAction = TIWaypointV2Action(type: .ZOOM)
             intervalShootingAction.actionId = UInt(newActionIndex)
             intervalShootingAction.trigger = trigger
             intervalShootingAction.actuator = actuator
@@ -772,7 +781,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             actuator.gimbalActuatorParam = actuatorParam
             
             newIndex += 1
-            let rotateGimbalAction = DJIWaypointV2Action()
+            let rotateGimbalAction = TIWaypointV2Action(type: .ROTATE_GIMBAL_ONLINE)
             rotateGimbalAction.actionId = UInt(newIndex)
             rotateGimbalAction.trigger = trigger
             rotateGimbalAction.actuator = actuator
