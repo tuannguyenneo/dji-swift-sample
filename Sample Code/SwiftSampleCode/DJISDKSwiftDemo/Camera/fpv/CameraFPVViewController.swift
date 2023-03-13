@@ -9,22 +9,27 @@
 import UIKit
 import DJISDK
 
+var cameraHybridZoomSpec: DJICameraHybridZoomSpec?
+
 class CameraFPVViewController: UIViewController {
 
     @IBOutlet weak var decodeModeSeg: UISegmentedControl!
     @IBOutlet weak var tempSwitch: UISwitch!
     @IBOutlet weak var tempLabel: UILabel!
     @IBOutlet weak var fpvView: UIView!
+    @IBOutlet var zoomLevel: UILabel!
     
     var adapter: VideoPreviewerAdapter?
     var needToSetMode = false
-        
     
+    var camera: DJICamera?
+    var len: DJILens?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         let camera = fetchCamera()
+        self.camera = camera
         camera?.delegate = self
         
         needToSetMode = true
@@ -42,6 +47,15 @@ class CameraFPVViewController: UIViewController {
             adapter?.setupFrameControlHandler()
         }
         
+        if let lens = camera?.lenses.first {
+            self.len = lens
+            self.len?.delegate = self
+            if lens.isHybridZoomSupported() {
+                lens.getHybridZoomSpec { cameraHybridZoom, _ in
+                    cameraHybridZoomSpec = cameraHybridZoom
+                }
+            }
+        }
     }
 
     
@@ -65,7 +79,7 @@ class CameraFPVViewController: UIViewController {
     
     @IBAction func onSwitchValueChanged(_ sender: UISwitch) {
         guard let camera = fetchCamera() else { return }
-        
+        self.camera = camera
         let mode: DJICameraThermalMeasurementMode = sender.isOn ? .spotMetering : .disabled
         camera.setThermalMeasurementMode(mode) { [weak self] (error) in
             if error != nil {
@@ -177,4 +191,19 @@ extension CameraFPVViewController {
                 })
             }
      }
+}
+
+extension CameraFPVViewController: DJILensDelegate {
+    func lens(_ lens: DJILens, didUpdate state: DJICameraTapZoomState) {
+        switch state {
+        case .idle:
+            if let cameraHybridZoomSpec = cameraHybridZoomSpec {
+                lens.getHybridZoomFocalLength { [weak self] value, _ in
+                    let cameraZoomLevel = cameraHybridZoomSpec.getZoomLevel(with: value)
+                    self?.zoomLevel.text = "\(cameraZoomLevel)"
+                }
+            }
+        default: break
+        }
+    }
 }
