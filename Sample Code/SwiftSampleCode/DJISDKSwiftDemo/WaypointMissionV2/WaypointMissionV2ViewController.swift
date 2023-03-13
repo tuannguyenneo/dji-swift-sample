@@ -56,6 +56,7 @@ final class WaypointMissionV2ViewController: UIViewController {
     }
     
     var cameraVC: CameraFPVViewController?
+    var backupListActionsV2 = [DJIWaypointV2Action]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -287,6 +288,7 @@ final class WaypointMissionV2ViewController: UIViewController {
         actionIndex = startMovingAction4.newActionIndex
         listActionsV2.append(startMovingAction4.waypointAction)
         
+        backupListActionsV2 = listActionsV2
         
         let tempMissionV2 = DJIMutableWaypointV2Mission()
         tempMissionV2.maxFlightSpeed = Float(5)
@@ -325,11 +327,25 @@ final class WaypointMissionV2ViewController: UIViewController {
                 if event.currentState == .readyToUpload {
                     // upload actions
                     self.missionV2Operator.uploadWaypointActions(listActionsV2) { error in
-                        print("===> upload actions: error = \(error)")
+                        print("===> upload actions: error = \(String(describing: error)) - number of actions = \(listActionsV2.count)")
                     }
                 } else if event.previousState == .uploading
                             && event.currentState == .readyToExecute {
                     print("===> Mission V2 ready to EXECUTE")
+                }
+            }
+            
+            self.missionV2Operator.addListener(toActionExecutionEvent: self, with: .main) { [weak self] event in
+                guard let self = self else { return }
+                if event.error != nil {
+                    let errCode = String((event.error! as NSError).code)
+                    print("===> Error code: \(errCode) - \(event.error.debugDescription)")
+                }
+                if let progress = event.progress {
+                    let actionID = progress.actionId
+                    if let wpAction = self.backupListActionsV2.first(where: { $0.actionId == actionID }) {
+                        print("===>> toActionExecutionEvent progress \(wpAction.)")
+                    }
                 }
             }
             
@@ -339,6 +355,10 @@ final class WaypointMissionV2ViewController: UIViewController {
                 } else {
                     
                     print("===>> execution action succeed \(event.description)")
+                    if event.progress?.isWaypointReached == true,
+                       let targetIndex = event.progress?.targetWaypointIndex {
+                        print("===>> Reached wp index = \(targetIndex)")
+                    }
                 }
             })
             
@@ -696,7 +716,7 @@ final class WaypointMissionV2ViewController: UIViewController {
             let triggerParam = DJIWaypointV2AssociateTriggerParam()
             triggerParam.actionIdAssociated = UInt(newActionIndex)
             triggerParam.actionAssociatedType = .afterFinished
-            triggerParam.waitingTime = UInt(3)
+            triggerParam.waitingTime = UInt(0)
             
             let trigger = DJIWaypointV2Trigger()
             trigger.actionTriggerType = .actionAssociated

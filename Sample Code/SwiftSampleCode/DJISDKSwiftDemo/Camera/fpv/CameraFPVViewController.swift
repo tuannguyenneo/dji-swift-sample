@@ -33,7 +33,7 @@ class CameraFPVViewController: UIViewController {
         camera?.delegate = self
         
         needToSetMode = true
-        
+        configCameraForM300(nil)
         DJIVideoPreviewer.instance()?.start()
         
         adapter = VideoPreviewerAdapter.init()
@@ -140,6 +140,84 @@ class CameraFPVViewController: UIViewController {
             }
         }
     }
+    
+    private func configCameraForM300(_ completion: ((Bool) -> Void)?) {
+        guard let product = DJISDKManager.product() as? DJIAircraft,
+              let listCamera = product.cameras,
+              let airLink = product.airLink else {
+            completion?(false)
+            return
+        }
+        
+        if airLink.isOcuSyncLinkSupported {
+            if let ocuSync = airLink.ocuSyncLink {
+                if listCamera.isEmpty {
+                    ocuSync.assignSource(toPrimaryChannel: .fpvCamera, secondaryChannel: .rightCamera) { error in
+                        if error != nil {
+                            completion?(false)
+                        }
+                    }
+                } else {
+                    ocuSync.assignSource(toPrimaryChannel: .leftCamera, secondaryChannel: .fpvCamera) { error in
+                        if error != nil {
+                            completion?(false)
+                        }
+                    }
+                }
+                
+                guard let camera = product.camera else {
+                    completion?(false)
+                    return
+                }
+                self.camera = camera
+                let lenses = camera.lenses
+                lenses.forEach { (lens) in
+                    if lens.isAdjustableFocalPointSupported() {
+                        // get exposure mode
+                        lens.getExposureMode { mode, err in
+                            if err == nil {
+//                                self.cameraExposureMode = mode
+                            }
+                        }
+                        self.len = lens
+                    }
+                }
+                camera.getVideoStreamSource { [weak self] (streamSource, error) in
+                    if error == nil {
+                        switch streamSource {
+                        case .wide:
+                            print("Set Camera Stream Source to Wide success!")
+                        case .zoom:
+                            print("Set Camera Stream Source to Zoom success!")
+                        case .infraredThermal:
+                            print("Set Camera Stream Source to Infrared Thermal success!")
+                        default:
+                            self?.setVideoStreamSource(type: .wide)
+                        }
+                    } else {
+                        print("Get Camera Stream Source failed!")
+                    }
+                }
+                setDefaultCameraCaptureStreamSource(camera: camera)
+                completion?(true)
+            }
+        }
+    }
+    
+    private func setDefaultCameraCaptureStreamSource(camera: DJICamera?) {
+        guard let camera = camera else { return }
+        
+        let listCameraSourceType: [DJICameraVideoStreamSource] = [.zoom, .wide, .infraredThermal]
+        let captureStreams: [NSNumber]  = listCameraSourceType.map({NSNumber(value: $0.rawValue)})
+        let cameraStreamSettings = DJICameraStreamSettings(needCurrentLiveView: false, streams: captureStreams )
+        camera.setCaptureStreamSources(cameraStreamSettings, withCompletion: { error in
+            if let error = error {
+                print("setCaptureStreamSources: error = \(error)")
+            } else {
+                print("logg setCaptureStreamSources: Ok")
+            }
+        })
+    }
 }
 
 /**
@@ -214,7 +292,7 @@ extension CameraFPVViewController: DJILensDelegate {
             if let cameraHybridZoomSpec = cameraHybridZoomSpec {
                 lens.getHybridZoomFocalLength { [weak self] value, _ in
                     let cameraZoomLevel = cameraHybridZoomSpec.getZoomLevel(with: value)
-                    self?.zoomLevel.text = "\(cameraZoomLevel)"
+                    self?.zoomLevel.text = "Magnification: \(cameraZoomLevel)\nFocal length: \(value)"
                 }
             }
         default: break
