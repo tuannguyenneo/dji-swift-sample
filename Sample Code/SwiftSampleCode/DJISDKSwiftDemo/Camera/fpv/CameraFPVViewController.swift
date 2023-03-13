@@ -56,8 +56,22 @@ class CameraFPVViewController: UIViewController {
                 }
             }
         }
+        
+        setVideoStreamSource(type: .zoom)
     }
 
+    private func setVideoStreamSource(type: DJICameraVideoStreamSource) {
+        guard let product = DJISDKManager.product() as? DJIAircraft
+        else { return }
+        guard let camera = product.camera else { return }
+        camera.setCameraVideoStreamSource(type) { (error) in
+            if error == nil {
+                print("Set Camera Stream Source to \(type) success!")
+            } else {
+                print("Set Camera Stream Source to \(type) failed!")
+            }
+        }
+    }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
