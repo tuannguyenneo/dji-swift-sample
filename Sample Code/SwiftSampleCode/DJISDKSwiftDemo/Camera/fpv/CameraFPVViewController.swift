@@ -44,8 +44,8 @@ class CameraFPVViewController: UIViewController {
             camera?.displayName == DJICameraDisplayNameMavicAir2Camera ||
             camera?.displayName == DJICameraDisplayNameDJIAir2SCamera ||
             camera?.displayName == DJICameraDisplayNameMavic2ProCamera {
-            adapter?.setupFrameControlHandler()
         }
+        adapter?.setupFrameControlHandler()
         
         if let lens = camera?.lenses.first {
             self.len = lens
